@@ -34,7 +34,7 @@ function setup() {
   let params = getURLParams();  
   console.log("code", params.code);
   if(params.code) {
-    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
+    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code.replace("%22",'"'), true);
   } else {
     title = getItem("title") || "";
     startDate = getItem("startDate");
@@ -154,9 +154,9 @@ function draw() {
     offset = 0;
     offsetDelta *= -1;
   }
-  if(offset > infoHeight - (HM - 26)) {
+  if(offset > infoHeight - (HM - 30)) {
     timeout = timeoutC;
-    offset = max(0, infoHeight - (HM - 26));
+    offset = max(0, infoHeight - (HM - 30));
     offsetDelta *= -1;
   }
 }
@@ -210,7 +210,7 @@ function loadChallengeSettingFromCode(iTitle, iStartDate, tBody, code, update) {
   }  
 }
 
-function loadChallengeSettingIntoInfo(iTitle, iStartDate, addSyncing) {  
+function loadChallengeSettingIntoInfo(iTitle, iStartDate, addSyncing) {
   title = iTitle.value();
   startDate = iStartDate.value();
   
@@ -241,7 +241,7 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
   const iName = document.createElement("input");
   iName.setAttribute("type", "text");
   iName.className = "cName " + challengeID;
-  if(name) iName.setAttribute("value", name);
+  if(name) iName.setAttribute("value", name.replace(/\n/g, '\\n'));
   const tdCurrent = document.createElement("td");
   const iCurrent = document.createElement("input");
   iCurrent.setAttribute("type", "number");
@@ -296,12 +296,7 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
 }
 
 function addChallengeInfo(iName, iCurrent, iTotal, iFinished, challengeID) {
-  let name = "";
-  let lines = iName.value.split("\\n");
-  for(let i = 0; i < lines.length; i++) {
-    name += lines[i];
-    if(i + 1 < lines.length) name += "\n";
-  }  
+  let name = iName.value.replace("\\n", '\n');
   let current = Number(iCurrent.value);
   let total = Number(iTotal.value);
   let finished = iFinished.checked || false;
