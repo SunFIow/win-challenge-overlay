@@ -34,7 +34,7 @@ function setup() {
   let params = getURLParams();  
   console.log("code", params.code);
   if(params.code) {
-    params.code = params.code.replaceAll("%22",'"')
+    params.code = decodeURI(params.code);
     console.log("code2", params.code);
     loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
   } else {
