@@ -8,15 +8,13 @@ const timeoutC = 300;
 let currentID = 0;
 
 let title;
-let challenges = [];
+let challenges;
 let info;
 let infoHeight = 50;
 let offset = 0;
 let offsetDelta = 0.25;
 let timeout = 0;
-let startDate;
-
-let currents = [];
+let startDate = "";
 
 function setup() {
   let bUpdatePanel = select('#updatePanel');
@@ -29,18 +27,18 @@ function setup() {
   let iStartDate = select('#iStartDate');
   let tBody = select('#challenges').child()[3];
   
-  console.log(getURL());
-  console.log(getURLPath());
-  console.log(getURLParams());
+  console.log("url", getURL());
+  console.log("path", getURLPath());
+  console.log("params", getURLParams());
   
-  let params = getURLParams();
-  console.log(params.code);
+  let params = getURLParams();  
+  console.log("code", params.code);
   if(params.code) {
     loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
   } else {
-    title = getItem("title");
+    title = getItem("title") || "";
     startDate = getItem("startDate");
-    challenges = getItem("challenges");
+    challenges = getItem("challenges") || [];
     if(title && startDate && challenges) loadChallengeSettingFromCode(iTitle, iStartDate, tBody, {title, startDate, challenges});
   }
   
@@ -80,11 +78,11 @@ function setup() {
   info.textSize(HT * 0.47);
   info.textLeading(HT * 0.52);
   info.textStyle(BOLD);
+  info.stroke(0, 100);
+  noStroke();
 }
 
-function draw() {
-  noStroke();  
-  
+function draw() {  
   clear();
   
   fill(163, 224, 201);
@@ -100,15 +98,17 @@ function draw() {
   fill(70, 85, 80);
   rect(0, HT + HL + HM + HL, W, HB);
   
-  fill(50, 60, 58);
+  if(title) fill(50, 60, 58);
+  else fill(125, 175, 150);
   textAlign(CENTER, CENTER);  
   textSize(HT * 0.5);
   textStyle(BOLD);
-  text(title, W / 2, HT / 2);
+  text(title || "title", W / 2, HT / 2);
   
   let h = 0;
-  info.clear();  
-  for(let challenge of challenges) {
+  info.clear();
+  for(let i = 0; i < challenges.length; i++) {
+    let challenge = challenges[i];
     if(challenge.finished) info.fill(100, 200, 100);
     else info.fill(235, 245, 255);
     
@@ -120,34 +120,44 @@ function draw() {
     
     h += HT * 0.52 + HT * 0.20;
     if(info.textWidth(challengeInfo) > W - 52) h += HT * 0.52;
+    
+    if(i + 1 == challenges.length) continue;
+    info.fill(70, 85, 80, 100);
+    info.rect(0, h - offset - HT * 0.19, W - 52, HL);
   }
   h -= HT * 0.28;
   infoHeight = h;  
   image(info, 25, HT + 15);
     
-  fill(235, 245, 255);
   textAlign(CENTER, CENTER);  
   textSize(HT * 0.5);
-  const millis = Date.now() - new Date(startDate);
-  const secs = Math.floor(millis / 1000);
-  const mins = Math.floor(secs / 60);
-  const hours = Math.floor(mins / 60);
-  text(`${nf(hours, 2, 0)}:${nf(mins % 60, 2, 0)}:${nf(secs % 60, 2, 0)}`, W / 2, HT + HM + HL + (HB / 2));
+  if(startDate) {
+    fill(235, 245, 255);
+    const millis = Date.now() - new Date(startDate);
+    const secs = Math.floor(millis / 1000);
+    const mins = Math.floor(secs / 60);
+    const hours = Math.floor(mins / 60);
+    text(`${nf(hours, 2, 0)}:${nf(mins % 60, 2, 0)}:${nf(secs % 60, 2, 0)}`, W / 2, HT + HM + HL + (HB / 2));
+  } else {
+    fill(163, 224, 201);
+    text("00:00:00", W / 2, HT + HM + HL + (HB / 2));
+  }
   
   if(timeout > 0) {
     timeout -= 1;
-  } else {
-    offset += offsetDelta;
-    if(offset < 0) {
-      timeout = timeoutC;
-      offset = 0;
-      offsetDelta *= -1;
-    }
-    if(offset > infoHeight - (HM - 30)) {
-      timeout = timeoutC;
-      offset = infoHeight - (HM - 30);
-      offsetDelta *= -1;
-    }
+    return;
+  }
+
+  offset += offsetDelta;
+  if(offset < 0) {
+    timeout = timeoutC;
+    offset = 0;
+    offsetDelta *= -1;
+  }
+  if(offset > infoHeight - (HM - 26)) {
+    timeout = timeoutC;
+    offset = max(0, infoHeight - (HM - 26));
+    offsetDelta *= -1;
   }
 }
 
@@ -247,16 +257,16 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
   iFinished.setAttribute("type", "checkbox");
   iFinished.className = "cFinished " + challengeID;
   if(finished) iFinished.setAttribute("checked", "");
-  const tdMoveDown = document.createElement("td");
-  const iMoveDown = document.createElement("input");
-  iMoveDown.setAttribute("type", "button");
-  iMoveDown.className = "cMoveChallengeUp " + challengeID;
-  iMoveDown.setAttribute("value", "↓");
   const tdMoveUp = document.createElement("td");
   const iMoveUp = document.createElement("input");
   iMoveUp.setAttribute("type", "button");
-  iMoveUp.className = "cMoveChallengeDown " + challengeID;
+  iMoveUp.className = "cMoveChallengeUp " + challengeID;
   iMoveUp.setAttribute("value", "↑");
+  const tdMoveDown = document.createElement("td");
+  const iMoveDown = document.createElement("input");
+  iMoveDown.setAttribute("type", "button");
+  iMoveDown.className = "cMoveChallengeDown " + challengeID;
+  iMoveDown.setAttribute("value", "↓");
   const tdRemove = document.createElement("td");
   const iRemove = document.createElement("input");
   iRemove.setAttribute("type", "reset");
@@ -267,8 +277,8 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
   tdCurrent.appendChild(iCurrent);
   tdTotal.appendChild(iTotal);
   tdFinished.appendChild(iFinished);
-  tdMoveDown.appendChild(iMoveDown);
   tdMoveUp.appendChild(iMoveUp);
+  tdMoveDown.appendChild(iMoveDown);
   tdRemove.appendChild(iRemove);
   
   const trChallenge = document.createElement("tr");
@@ -278,8 +288,8 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
   trChallenge.appendChild(tdCurrent);
   trChallenge.appendChild(tdTotal);
   trChallenge.appendChild(tdFinished);
-  trChallenge.appendChild(tdMoveDown);
   trChallenge.appendChild(tdMoveUp);
+  trChallenge.appendChild(tdMoveDown);
   trChallenge.appendChild(tdRemove);
 
   tBody.appendChild(trChallenge);  
