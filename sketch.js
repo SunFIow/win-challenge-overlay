@@ -29,17 +29,19 @@ function setup() {
   let iStartDate = select('#iStartDate');
   let tBody = select('#challenges').child()[3];
   
-  let params = getURLParams();
   console.log(getURL());
   console.log(getURLPath());
   console.log(getURLParams());
+  
+  let params = getURLParams();
+  console.log(params.code);
   if(params.code) {
     loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
   } else {
     title = getItem("title");
     startDate = getItem("startDate");
     challenges = getItem("challenges");
-    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, {title, startDate, challenges});
+    if(title && startDate && challenges) loadChallengeSettingFromCode(iTitle, iStartDate, tBody, {title, startDate, challenges});
   }
   
   bUpdatePanel.mousePressed(() => {
