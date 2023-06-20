@@ -34,7 +34,9 @@ function setup() {
   let params = getURLParams();  
   console.log("code", params.code);
   if(params.code) {
-    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code.replaceAll("%22",'"'), true);
+    params.code = params.code.replaceAll("%22",'"')
+    console.log("code2", params.code);
+    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
   } else {
     title = getItem("title") || "";
     startDate = getItem("startDate");
