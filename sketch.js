@@ -34,7 +34,7 @@ function setup() {
   let params = getURLParams();  
   console.log("code", params.code);
   if(params.code) {
-    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code.replace("%22",'"'), true);
+    loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code.replaceAll("%22",'"'), true);
   } else {
     title = getItem("title") || "";
     startDate = getItem("startDate");
@@ -241,7 +241,7 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
   const iName = document.createElement("input");
   iName.setAttribute("type", "text");
   iName.className = "cName " + challengeID;
-  if(name) iName.setAttribute("value", name.replace(/\n/g, '\\n'));
+  if(name) iName.setAttribute("value", name.replaceAll(/\n/g, '\\n'));
   const tdCurrent = document.createElement("td");
   const iCurrent = document.createElement("input");
   iCurrent.setAttribute("type", "number");
@@ -296,7 +296,7 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
 }
 
 function addChallengeInfo(iName, iCurrent, iTotal, iFinished, challengeID) {
-  let name = iName.value.replace("\\n", '\n');
+  let name = iName.value.replaceAll("\\n", '\n');
   let current = Number(iCurrent.value);
   let total = Number(iTotal.value);
   let finished = iFinished.checked || false;
