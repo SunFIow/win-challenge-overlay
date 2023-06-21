@@ -17,6 +17,13 @@ let timeout = 0;
 let startDate = "";
 
 function setup() {
+  console.log("testVar1", testVar1);
+  console.log("testVar2", testVar2);
+  console.log("testVar3", testVar3);
+  console.log("testToken1", testToken1);
+  console.log("testToken2", testToken2);
+  console.log("testToken3", testToken3);
+  
   let bUpdatePanel = select('#updatePanel');
   let bAddChallenge = select('#addChallenge');
   let bClear = select('#clearAll');
