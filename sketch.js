@@ -3,8 +3,9 @@ const HT = 90;
 const HM = 400;
 const HL = 5;
 const HB = 105;
-const timeoutC = 300;
-let offsetDelta = 0.25;
+let offsetDir = 1;
+let pauseSlider;
+let speedSlider;
 
 let currentID = 0;
 
@@ -25,28 +26,29 @@ function setup() {
 	const iChallengeCode = select('#iChallengeCode');
 	const iTitle = select('#iTitle');
 	const iStartDate = select('#iStartDate');
-	const tBody = select('#challenges').child()[3];
+	const challengeTBody = select('#challenges>tBody').elt;
+	const settingsTBody = select('#settings>tBody').elt;
 
-	console.log('url', getURL());
-	console.log('path', getURLPath());
-	console.log('params', getURLParams());
+	speedSlider = select('#iScrollSpeed').elt;
+	pauseSlider = select('#iPauseDuration').elt;
+
+	speedSlider.value = 0.25;
+	pauseSlider.value = 300;
 
 	const params = getURLParams();
-	console.log('code', params.code);
 	if (params.code) {
 		params.code = decodeURI(params.code);
-		console.log('code2', params.code);
-		loadChallengeSettingFromCode(iTitle, iStartDate, tBody, params.code, true);
+		loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, params.code, true);
 	} else {
 		title = getItem('title') || '';
 		startDate = getItem('startDate') || '';
 		challenges = getItem('challenges') || [];
-		if (title && startDate && challenges) loadChallengeSettingFromCode(iTitle, iStartDate, tBody, { title, startDate, challenges });
+		speedSlider.value = getItem('scrollSpeed') || 0.25;
+		pauseSlider.value = getItem('pauseDuration') || 300;
+		if (title && startDate && challenges) loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, { title, startDate, challenges });
 	}
 
-	bUpdatePanel.mousePressed(() => {
-		loadChallengeSettingIntoInfo(iTitle, iStartDate, false);
-	});
+	bUpdatePanel.mousePressed(() => loadChallengeSettingIntoInfo(iTitle, iStartDate));
 
 	bAddChallenge.mousePressed(() => {
 		let challengeID;
@@ -54,15 +56,13 @@ function setup() {
 			challengeID = '-id-' + currentID++;
 		} while (select('.' + challengeID));
 
-		addChallengeSetting(tBody, challengeID);
-		const settings = getChallengeSetting(challengeID);
-		addSyncHandler(settings.iName, settings.iCurrent, settings.iTotal, settings.iFinished);
+		addChallengeSetting(challengeTBody, challengeID);
 	});
 
 	bClear.mousePressed(() => {
 		iTitle.value('');
 		iStartDate.value('');
-		while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
+		while (challengeTBody.firstChild) challengeTBody.removeChild(challengeTBody.lastChild);
 	});
 
 	bExport.mousePressed(() => {
@@ -70,7 +70,7 @@ function setup() {
 	});
 
 	bImport.mousePressed(() => {
-		loadChallengeSettingFromCode(iTitle, iStartDate, tBody, iChallengeCode.value(), false);
+		loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, iChallengeCode.value(), false);
 	});
 
 	createCanvas(W, HT + HL + HM + HL + HB - 15);
@@ -150,16 +150,16 @@ function draw() {
 		return;
 	}
 
-	offset += offsetDelta;
+	offset += offsetDir * speedSlider.value;
 	if (offset < 0) {
-		timeout = timeoutC;
+		timeout = pauseSlider.value;
 		offset = 0;
-		offsetDelta *= -1;
+		offsetDir *= -1;
 	}
 	if (offset > infoHeight - (HM - 30)) {
-		timeout = timeoutC;
+		timeout = pauseSlider.value;
 		offset = max(0, infoHeight - (HM - 30));
-		offsetDelta *= -1;
+		offsetDir *= -1;
 	}
 }
 
@@ -212,7 +212,7 @@ function loadChallengeSettingFromCode(iTitle, iStartDate, tBody, code, update) {
 	}
 }
 
-function loadChallengeSettingIntoInfo(iTitle, iStartDate, addSyncing) {
+function loadChallengeSettingIntoInfo(iTitle, iStartDate) {
 	title = iTitle.value();
 	startDate = iStartDate.value();
 
@@ -224,18 +224,11 @@ function loadChallengeSettingIntoInfo(iTitle, iStartDate, addSyncing) {
 		addChallengeInfo(iName, iCurrent, iTotal, iFinished, challengeID);
 	}
 
-	console.log('saved', challenges);
-
 	storeItem('title', title);
 	storeItem('startDate', startDate);
 	storeItem('challenges', challenges);
-}
-
-function addSyncHandler(iName, iCurrent, iTotal, iFinished) {
-	iName.addEventListener('input', e => iName.setAttribute('value', e.target.value));
-	iCurrent.addEventListener('input', e => iCurrent.setAttribute('value', e.target.value));
-	iTotal.addEventListener('input', e => iTotal.setAttribute('value', e.target.value));
-	iFinished.addEventListener('input', e => iFinished.setAttribute('checked', e.target.checked));
+	storeItem('scrollSpeed', speedSlider.value);
+	storeItem('pauseDuration', pauseSlider.value);
 }
 
 function addChallengeSetting(tBody, challengeID, name, current, total, finished) {

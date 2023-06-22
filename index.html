@@ -18,18 +18,28 @@
 				<input type="button" id="importCode" value="Import" />
 			</div>
 			<table id="settings">
-				<tr class="">
-					<th><span class="description">Challenge Code</span></th>
-					<td><input type="text" id="iChallengeCode" class="setting" /></td>
-				</tr>
-				<tr class="">
-					<th><span class="description dTitle">Title</span></th>
-					<td><input type="text" id="iTitle" class="setting" value="WIN-CHALLENGE" /></td>
-				</tr>
-				<tr class="">
-					<th><span class="description">Time</span></th>
-					<td><input type="datetime-local" id="iStartDate" class="setting" /></td>
-				</tr>
+				<tbody>
+					<tr class="">
+						<th><span class="description">Challenge Code</span></th>
+						<td><input type="text" title="Challenge Code" placeholder="Challenge Code" id="iChallengeCode" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description dTitle">Title</span></th>
+						<td><input type="text" title="Title" placeholder="Title" id="iTitle" class="setting" value="WIN-CHALLENGE" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Start Date</span></th>
+						<td><input type="datetime-local" title="Start Date" id="iStartDate" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Scroll Speed</span></th>
+						<td><input type="range" title="Scroll Speed" min="0" max="5" step="1e-18" id="iScrollSpeed" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Pause Duration</span></th>
+						<td><input type="range" title="Pause Duration" min="0" max="5000" step="1e-18" id="iPauseDuration" class="setting" /></td>
+					</tr>
+				</tbody>
 			</table>
 			<table id="challenges">
 				<thead>
