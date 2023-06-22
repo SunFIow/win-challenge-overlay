@@ -180,12 +180,13 @@ function mousePressed(evt) {
 
 function loadChallengeSettingFromCode(tBody, code) {
 	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
-	title.value(code.title || '');
-	startDate.value(code.startDate || '');
-	scrollSpeed.value(code.scrollSpeed || 0.25);
-	pauseDuration.value(code.pauseDuration || 300);
+	title.value(code?.title || '');
+	startDate.value(code?.startDate || '');
+	scrollSpeed.value(code?.scrollSpeed || 0.25);
+	pauseDuration.value(code?.pauseDuration || 300);
 	while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
-	for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
+	if (code?.challenges)
+		for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
 }
 
 function addChallengeSetting(tBody, challengeID, name, current, total, finished) {
@@ -290,6 +291,5 @@ function jsonSettings() {
 }
 
 function settingsChanged() {
-	console.log('settingsChanged');
 	storeItem('challengeCode', jsonSettings());
 }
