@@ -93,29 +93,21 @@ function draw() {
 	textAlign(CENTER, CENTER);
 	textSize(HT * 0.5);
 	textStyle(BOLD);
-	text(title.value() || 'title', W / 2, HT / 2);
+	text(title.value() ?? 'title', W / 2, HT / 2);
 
 	let h = 0;
 	info.clear();
 	const challenges = selectAll('.challenge');
 	for (let i = 0; i < challenges.length; i++) {
 		const challengeID = challenges[i].elt.classList[1];
-		const iName = select('.cName.' + challengeID).elt;
-		const iCurrent = select('.cCurrent.' + challengeID).elt;
-		const iTotal = select('.cTotal.' + challengeID).elt;
-		const iFinished = select('.cFinished.' + challengeID).elt;
+		const challenge = getChallenge(challengeID);
 
-		const name = iName.value.replaceAll('\\n', '\n');
-		const current = Number(iCurrent.value);
-		const total = Number(iTotal.value);
-		const finished = iFinished.checked || false;
-
-		if (finished) info.fill(100, 200, 100);
+		if (challenge.finished) info.fill(100, 200, 100);
 		else info.fill(235, 245, 255);
 
-		let challengeInfo = name;
-		if (current || total) challengeInfo += ' ' + current || 0;
-		if (total) challengeInfo += '/' + total;
+		let challengeInfo = challenge.name;
+		if (challenge.current || challenge.total) challengeInfo += ' ' + (challenge.current ?? 0);
+		if (challenge.total) challengeInfo += '/' + challenge.total;
 
 		info.text(challengeInfo, 0, h - offset, W - 50);
 
@@ -180,12 +172,13 @@ function mousePressed(evt) {
 
 function loadChallengeSettingFromCode(tBody, code) {
 	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
-	title.value(code.title || '');
-	startDate.value(code.startDate || '');
-	scrollSpeed.value(code.scrollSpeed || 0.25);
-	pauseDuration.value(code.pauseDuration || 300);
+	title.value(code.title ?? '');
+	startDate.value(code.startDate ?? '');
+	scrollSpeed.value(code.scrollSpeed ?? 0.25);
+	pauseDuration.value(code.pauseDuration ?? 300);
 	while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
-	for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
+	if (code?.challenges)
+		for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
 }
 
 function addChallengeSetting(tBody, challengeID, name, current, total, finished) {
@@ -272,24 +265,27 @@ function jsonSettings() {
 	const challenges = [];
 	for (const challenge of selectAll('.challenge')) {
 		const challengeID = challenge.elt.classList[1];
-		const iName = select('.cName.' + challengeID).elt;
-		const iCurrent = select('.cCurrent.' + challengeID).elt;
-		const iTotal = select('.cTotal.' + challengeID).elt;
-		const iFinished = select('.cFinished.' + challengeID).elt;
-
-		const id = challengeID;
-		const name = iName.value.replaceAll('\\n', '\n');
-		const current = Number(iCurrent.value);
-		const total = Number(iTotal.value);
-		const finished = iFinished.checked || false;
-
-		challenges.push({ id, name, current, total, finished });
+		challenges.push(getChallenge(challengeID));
 	}
 
 	return { title: title.value(), startDate: startDate.value(), scrollSpeed: scrollSpeed.value(), pauseDuration: pauseDuration.value(), challenges };
 }
 
+function getChallenge(challengeID) {
+	const iName = select('.cName.' + challengeID).elt;
+	const iCurrent = select('.cCurrent.' + challengeID).elt;
+	const iTotal = select('.cTotal.' + challengeID).elt;
+	const iFinished = select('.cFinished.' + challengeID).elt;
+
+	const id = challengeID;
+	const name = iName.value.replaceAll('\\n', '\n');
+	const current = Number(iCurrent.value);
+	const total = Number(iTotal.value);
+	const finished = iFinished.checked ?? false;
+
+	return { id, name, current, total, finished };
+}
+
 function settingsChanged() {
-	console.log('settingsChanged');
 	storeItem('challengeCode', jsonSettings());
 }
