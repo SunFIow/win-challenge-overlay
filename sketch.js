@@ -3,52 +3,44 @@ const HT = 90;
 const HM = 400;
 const HL = 5;
 const HB = 105;
-let offsetDir = 1;
-let pauseSlider;
-let speedSlider;
 
 let currentID = 0;
 
-let title;
-let startDate;
-let challenges;
 let info;
 let infoHeight;
 let offset = 0;
+let offsetDir = 1;
 let timeout = 0;
 
+let title;
+let startDate;
+let pauseDuration;
+let scrollSpeed;
+
 function setup() {
-	const bUpdatePanel = select('#updatePanel');
 	const bAddChallenge = select('#addChallenge');
 	const bClear = select('#clearAll');
 	const bExport = select('#exportCode');
 	const bImport = select('#importCode');
 	const iChallengeCode = select('#iChallengeCode');
-	const iTitle = select('#iTitle');
-	const iStartDate = select('#iStartDate');
+	title = select('#iTitle');
+	startDate = select('#iStartDate');
+	scrollSpeed = select('#iScrollSpeed');
+	pauseDuration = select('#iPauseDuration');
 	const challengeTBody = select('#challenges>tBody').elt;
-	const settingsTBody = select('#settings>tBody').elt;
 
-	speedSlider = select('#iScrollSpeed').elt;
-	pauseSlider = select('#iPauseDuration').elt;
-
-	speedSlider.value = 0.25;
-	pauseSlider.value = 300;
+	title.input(settingsChanged);
+	startDate.input(settingsChanged);
+	scrollSpeed.input(settingsChanged);
+	pauseDuration.input(settingsChanged);
 
 	const params = getURLParams();
 	if (params.code) {
 		params.code = decodeURI(params.code);
-		loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, params.code, true);
+		loadChallengeSettingFromCode(challengeTBody, params.code);
 	} else {
-		title = getItem('title') || '';
-		startDate = getItem('startDate') || '';
-		challenges = getItem('challenges') || [];
-		speedSlider.value = getItem('scrollSpeed') || 0.25;
-		pauseSlider.value = getItem('pauseDuration') || 300;
-		if (title && startDate && challenges) loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, { title, startDate, challenges });
+		loadChallengeSettingFromCode(challengeTBody, getItem('challengeCode'));
 	}
-
-	bUpdatePanel.mousePressed(() => loadChallengeSettingIntoInfo(iTitle, iStartDate));
 
 	bAddChallenge.mousePressed(() => {
 		let challengeID;
@@ -60,18 +52,14 @@ function setup() {
 	});
 
 	bClear.mousePressed(() => {
-		iTitle.value('');
-		iStartDate.value('');
+		title.value('');
+		startDate.value('');
 		while (challengeTBody.firstChild) challengeTBody.removeChild(challengeTBody.lastChild);
 	});
 
-	bExport.mousePressed(() => {
-		iChallengeCode.value(JSON.stringify({ title, startDate, challenges }));
-	});
+	bExport.mousePressed(() => iChallengeCode.value(JSON.stringify(jsonSettings())));
 
-	bImport.mousePressed(() => {
-		loadChallengeSettingFromCode(iTitle, iStartDate, challengeTBody, iChallengeCode.value(), false);
-	});
+	bImport.mousePressed(() => loadChallengeSettingFromCode(challengeTBody, iChallengeCode.value()));
 
 	createCanvas(W, HT + HL + HM + HL + HB - 15);
 
@@ -100,23 +88,34 @@ function draw() {
 	fill(70, 85, 80);
 	rect(0, HT + HL + HM + HL, W, HB);
 
-	if (title) fill(50, 60, 58);
+	if (title.value()) fill(50, 60, 58);
 	else fill(125, 175, 150);
 	textAlign(CENTER, CENTER);
 	textSize(HT * 0.5);
 	textStyle(BOLD);
-	text(title || 'title', W / 2, HT / 2);
+	text(title.value() || 'title', W / 2, HT / 2);
 
 	let h = 0;
 	info.clear();
+	const challenges = selectAll('.challenge');
 	for (let i = 0; i < challenges.length; i++) {
-		const challenge = challenges[i];
-		if (challenge.finished) info.fill(100, 200, 100);
+		const challengeID = challenges[i].elt.classList[1];
+		const iName = select('.cName.' + challengeID).elt;
+		const iCurrent = select('.cCurrent.' + challengeID).elt;
+		const iTotal = select('.cTotal.' + challengeID).elt;
+		const iFinished = select('.cFinished.' + challengeID).elt;
+
+		const name = iName.value.replaceAll('\\n', '\n');
+		const current = Number(iCurrent.value);
+		const total = Number(iTotal.value);
+		const finished = iFinished.checked || false;
+
+		if (finished) info.fill(100, 200, 100);
 		else info.fill(235, 245, 255);
 
-		let challengeInfo = challenge.name;
-		if (challenge.current || challenge.total) challengeInfo += ' ' + challenge.current || 0;
-		if (challenge.total) challengeInfo += '/' + challenge.total;
+		let challengeInfo = name;
+		if (current || total) challengeInfo += ' ' + current || 0;
+		if (total) challengeInfo += '/' + total;
 
 		info.text(challengeInfo, 0, h - offset, W - 50);
 
@@ -133,9 +132,9 @@ function draw() {
 
 	textAlign(CENTER, CENTER);
 	textSize(HT * 0.5);
-	if (startDate) {
+	if (startDate.value()) {
 		fill(235, 245, 255);
-		const millis = Date.now() - new Date(startDate);
+		const millis = Date.now() - new Date(startDate.value());
 		const secs = Math.floor(millis / 1000);
 		const mins = Math.floor(secs / 60);
 		const hours = Math.floor(mins / 60);
@@ -150,14 +149,14 @@ function draw() {
 		return;
 	}
 
-	offset += offsetDir * speedSlider.value;
+	offset += offsetDir * scrollSpeed.value();
 	if (offset < 0) {
-		timeout = pauseSlider.value;
+		timeout = pauseDuration.value();
 		offset = 0;
 		offsetDir *= -1;
 	}
 	if (offset > infoHeight - (HM - 30)) {
-		timeout = pauseSlider.value;
+		timeout = pauseDuration.value();
 		offset = max(0, infoHeight - (HM - 30));
 		offsetDir *= -1;
 	}
@@ -169,104 +168,86 @@ function mousePressed(evt) {
 		const challenge = select('.challenge.' + classList[1]);
 		challenge.remove();
 	} else if (classList.contains('cMoveChallengeUp')) {
-		const challengeIndex = findChallengeIndex(classList[1]);
-		if (challengeIndex < 1) return;
-
-		const challenge = select('.challenge.' + classList[1]);
-		select('.challenge.' + challenges[challengeIndex - 1].id).elt.before(challenge.elt);
-
-		const _c = challenges[challengeIndex];
-		challenges[challengeIndex] = challenges[challengeIndex - 1];
-		challenges[challengeIndex - 1] = _c;
+		const challenge = select('.challenge.' + classList[1]).elt;
+		const challengeAbove = challenge.previousElementSibling;
+		challengeAbove?.before(challenge);
 	} else if (classList.contains('cMoveChallengeDown')) {
-		const challengeIndex = findChallengeIndex(classList[1]);
-		if (challengeIndex + 1 >= challenges.length) return;
-
-		const challenge = select('.challenge.' + classList[1]);
-		select('.challenge.' + challenges[challengeIndex + 1].id).elt.after(challenge.elt);
-
-		const _c = challenges[challengeIndex];
-		challenges[challengeIndex] = challenges[challengeIndex + 1];
-		challenges[challengeIndex + 1] = _c;
+		const challenge = select('.challenge.' + classList[1]).elt;
+		const challengeBelow = challenge.nextElementSibling;
+		challengeBelow?.after(challenge);
 	}
 }
 
-function loadChallengeSettingFromCode(iTitle, iStartDate, tBody, code, update) {
-	if (typeof code === 'string' || code instanceof String) {
-		code = JSON.parse(code);
-	}
-
-	if (update) {
-		title = code.title;
-		startDate = code.startDate;
-		challenges = code.challenges;
-	}
-
-	iTitle.value(code.title);
-	iStartDate.value(code.startDate);
+function loadChallengeSettingFromCode(tBody, code) {
+	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
+	title.value(code.title || '');
+	startDate.value(code.startDate || '');
+	scrollSpeed.value(code.scrollSpeed || 0.25);
+	pauseDuration.value(code.pauseDuration || 300);
 	while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
-	for (const challenge of code.challenges) {
-		addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
-		const settings = getChallengeSetting(challenge.id);
-		addSyncHandler(settings.iName, settings.iCurrent, settings.iTotal, settings.iFinished);
-	}
-}
-
-function loadChallengeSettingIntoInfo(iTitle, iStartDate) {
-	title = iTitle.value();
-	startDate = iStartDate.value();
-
-	challenges = [];
-	const tChallenges = selectAll('.challenge');
-	for (const tChallenge of tChallenges) {
-		const challengeID = tChallenge.elt.classList[1];
-		const { iName, iCurrent, iTotal, iFinished } = getChallengeSetting(challengeID);
-		addChallengeInfo(iName, iCurrent, iTotal, iFinished, challengeID);
-	}
-
-	storeItem('title', title);
-	storeItem('startDate', startDate);
-	storeItem('challenges', challenges);
-	storeItem('scrollSpeed', speedSlider.value);
-	storeItem('pauseDuration', pauseSlider.value);
+	for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
 }
 
 function addChallengeSetting(tBody, challengeID, name, current, total, finished) {
+	const trChallenge = document.createElement('tr');
 	const tdName = document.createElement('td');
-	const iName = document.createElement('input');
-	iName.setAttribute('type', 'text');
-	iName.className = 'cName ' + challengeID;
-	if (name) iName.setAttribute('value', name.replaceAll(/\n/g, '\\n'));
 	const tdCurrent = document.createElement('td');
-	const iCurrent = document.createElement('input');
-	iCurrent.setAttribute('type', 'number');
-	iCurrent.className = 'cCurrent ' + challengeID;
-	if (current) iCurrent.setAttribute('value', current);
 	const tdTotal = document.createElement('td');
-	const iTotal = document.createElement('input');
-	iTotal.setAttribute('type', 'number');
-	iTotal.className = 'cTotal ' + challengeID;
-	if (total) iTotal.setAttribute('value', total);
 	const tdFinished = document.createElement('td');
-	const iFinished = document.createElement('input');
-	iFinished.setAttribute('type', 'checkbox');
-	iFinished.className = 'cFinished ' + challengeID;
-	if (finished) iFinished.setAttribute('checked', '');
 	const tdMoveUp = document.createElement('td');
-	const iMoveUp = document.createElement('input');
-	iMoveUp.setAttribute('type', 'button');
-	iMoveUp.className = 'cMoveChallengeUp ' + challengeID;
-	iMoveUp.setAttribute('value', '↑');
 	const tdMoveDown = document.createElement('td');
-	const iMoveDown = document.createElement('input');
-	iMoveDown.setAttribute('type', 'button');
-	iMoveDown.className = 'cMoveChallengeDown ' + challengeID;
-	iMoveDown.setAttribute('value', '↓');
 	const tdRemove = document.createElement('td');
+
+	const iName = document.createElement('input');
+	const iCurrent = document.createElement('input');
+	const iTotal = document.createElement('input');
+	const iFinished = document.createElement('input');
+	const iMoveUp = document.createElement('input');
+	const iMoveDown = document.createElement('input');
 	const iRemove = document.createElement('input');
-	iRemove.setAttribute('type', 'reset');
+
+	trChallenge.className = 'challenge ' + challengeID;
+	iName.className = 'cName ' + challengeID;
+	iCurrent.className = 'cCurrent ' + challengeID;
+	iTotal.className = 'cTotal ' + challengeID;
+	iFinished.className = 'cFinished ' + challengeID;
+	iMoveUp.className = 'cMoveChallengeUp ' + challengeID;
+	iMoveDown.className = 'cMoveChallengeDown ' + challengeID;
 	iRemove.className = 'cRemoveChallenge ' + challengeID;
+
+	iName.setAttribute('type', 'text');
+	iCurrent.setAttribute('type', 'number');
+	iTotal.setAttribute('type', 'number');
+	iFinished.setAttribute('type', 'checkbox');
+	iMoveUp.setAttribute('type', 'button');
+	iMoveDown.setAttribute('type', 'button');
+	iRemove.setAttribute('type', 'reset');
+
+	iName.title = 'Name';
+	iName.placeholder = 'Name';
+	iCurrent.title = 'Current Wins';
+	iTotal.title = 'Needed Wins';
+	iFinished.title = 'Finished Challenge';
+	iMoveUp.title = 'Move Challenge Up';
+	iMoveDown.title = 'Move Challenge Down';
+	iRemove.title = 'Remove Challenge';
+
+	if (name) iName.setAttribute('value', name.replaceAll(/\n/g, '\\n'));
+	if (current) iCurrent.setAttribute('value', current);
+	if (total) iTotal.setAttribute('value', total);
+	if (finished) iFinished.setAttribute('checked', '');
+
+	iMoveUp.setAttribute('value', '↑');
+	iMoveDown.setAttribute('value', '↓');
 	iRemove.setAttribute('value', 'x');
+
+	iName.addEventListener('input', settingsChanged);
+	iCurrent.addEventListener('input', settingsChanged);
+	iTotal.addEventListener('input', settingsChanged);
+	iFinished.addEventListener('input', settingsChanged);
+	iMoveUp.addEventListener('input', settingsChanged);
+	iMoveDown.addEventListener('input', settingsChanged);
+	iRemove.addEventListener('input', settingsChanged);
 
 	tdName.appendChild(iName);
 	tdCurrent.appendChild(iCurrent);
@@ -275,9 +256,6 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
 	tdMoveUp.appendChild(iMoveUp);
 	tdMoveDown.appendChild(iMoveDown);
 	tdRemove.appendChild(iRemove);
-
-	const trChallenge = document.createElement('tr');
-	trChallenge.classList = 'challenge ' + challengeID;
 
 	trChallenge.appendChild(tdName);
 	trChallenge.appendChild(tdCurrent);
@@ -290,26 +268,28 @@ function addChallengeSetting(tBody, challengeID, name, current, total, finished)
 	tBody.appendChild(trChallenge);
 }
 
-function addChallengeInfo(iName, iCurrent, iTotal, iFinished, challengeID) {
-	const name = iName.value.replaceAll('\\n', '\n');
-	const current = Number(iCurrent.value);
-	const total = Number(iTotal.value);
-	const finished = iFinished.checked || false;
-	challenges.push({ id: challengeID, name, current, total, finished });
-}
+function jsonSettings() {
+	const challenges = [];
+	for (const challenge of selectAll('.challenge')) {
+		const challengeID = challenge.elt.classList[1];
+		const iName = select('.cName.' + challengeID).elt;
+		const iCurrent = select('.cCurrent.' + challengeID).elt;
+		const iTotal = select('.cTotal.' + challengeID).elt;
+		const iFinished = select('.cFinished.' + challengeID).elt;
 
-function getChallengeSetting(challengeID) {
-	const iName = select('.cName.' + challengeID).elt;
-	const iCurrent = select('.cCurrent.' + challengeID).elt;
-	const iTotal = select('.cTotal.' + challengeID).elt;
-	const iFinished = select('.cFinished.' + challengeID).elt;
+		const id = challengeID;
+		const name = iName.value.replaceAll('\\n', '\n');
+		const current = Number(iCurrent.value);
+		const total = Number(iTotal.value);
+		const finished = iFinished.checked || false;
 
-	return { iName, iCurrent, iTotal, iFinished };
-}
-
-function findChallengeIndex(challengeID) {
-	for (let i = 0; i < challenges.length; i++) {
-		if (challenges[i].id == challengeID) return i;
+		challenges.push({ id, name, current, total, finished });
 	}
-	return -1;
+
+	return { title: title.value(), startDate: startDate.value(), scrollSpeed: scrollSpeed.value(), pauseDuration: pauseDuration.value(), challenges };
+}
+
+function settingsChanged() {
+	console.log('settingsChanged');
+	storeItem('challengeCode', jsonSettings());
 }
