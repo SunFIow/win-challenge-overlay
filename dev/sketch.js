@@ -93,7 +93,7 @@ function draw() {
 	textAlign(CENTER, CENTER);
 	textSize(HT * 0.5);
 	textStyle(BOLD);
-	text(title.value() ?? 'title', W / 2, HT / 2);
+	text(title.value() || 'title', W / 2, HT / 2);
 
 	let h = 0;
 	info.clear();
@@ -172,10 +172,10 @@ function mousePressed(evt) {
 
 function loadChallengeSettingFromCode(tBody, code) {
 	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
-	title.value(code.title ?? '');
-	startDate.value(code.startDate ?? '');
-	scrollSpeed.value(code.scrollSpeed ?? 0.25);
-	pauseDuration.value(code.pauseDuration ?? 300);
+	title.value(code?.title ?? '');
+	startDate.value(code?.startDate ?? '');
+	scrollSpeed.value(code?.scrollSpeed ?? 0.25);
+	pauseDuration.value(code?.pauseDuration ?? 300);
 	while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
 	if (code?.challenges)
 		for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
