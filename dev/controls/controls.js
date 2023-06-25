@@ -37,7 +37,7 @@ function setup() {
 	let host =
 		location.hostname == '127.0.0.1' || location.hostname == 'localhost'
 			? 'http://127.0.0.1:3000'
-			: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
+			: `https://win-challenge-backend${getURLPath().includes('dev') ? '-dev' : ''}.up.railway.app`;
 	bSend.addEventListener('click', evt => {
 		fetch(host + '/settings/' + challengeID.value(), {
 			method: 'POST',
