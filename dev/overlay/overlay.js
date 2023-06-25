@@ -4,11 +4,6 @@ const HM = 400;
 const HL = 5;
 const HB = 90;
 
-const backend =
-	location.hostname == '127.0.0.1' || location.hostname == 'localhost'
-		? 'http://127.0.0.1:3000'
-		: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
-
 let currentID = 0;
 
 let info;
@@ -28,7 +23,11 @@ let challengeUpdateSource;
 function setup() {
 	const params = getURLParams();
 	if (params.id) {
-		challengeUpdateSource = new EventSource(backend + '/settings/' + params.id);
+		let host =
+			location.hostname == '127.0.0.1' || location.hostname == 'localhost'
+				? 'http://127.0.0.1:3000'
+				: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
+		challengeUpdateSource = new EventSource(host + '/settings/' + params.id);
 		challengeUpdateSource.onmessage = event => {
 			console.log(event, event.data);
 			loadChallengeSettingFromCode(JSON.parse(event.data));

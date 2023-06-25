@@ -4,11 +4,6 @@ const HM = 400;
 const HL = 5;
 const HB = 90;
 
-const backend =
-	location.hostname == '127.0.0.1' || location.hostname == 'localhost'
-		? 'http://127.0.0.1:3000'
-		: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
-
 let currentID = 0;
 
 let info;
@@ -39,8 +34,12 @@ function setup() {
 	const challengeTBody = select('#challenges>tBody').elt;
 
 	const bSend = select('#send').elt;
+	let host =
+		location.hostname == '127.0.0.1' || location.hostname == 'localhost'
+			? 'http://127.0.0.1:3000'
+			: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
 	bSend.addEventListener('click', evt => {
-		fetch(backend + '/settings/' + challengeID.value(), {
+		fetch(host + '/settings/' + challengeID.value(), {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(jsonSettings()),
