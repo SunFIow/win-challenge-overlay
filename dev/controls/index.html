@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" href="../favicon-16.png" />
+		<link rel="stylesheet" type="text/css" href="controls.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+		<title>Win Challenge Controls</title>
+	</head>
+	<body>
+		<main></main>
+		<div id="controls">
+			<div id="buttons">
+				<input type="button" id="send" value="Send" />
+				<input type="button" id="addChallenge" value="Add Challenge" />
+				<input type="button" id="clearAll" value="Clear" />
+				<input type="button" id="exportCode" value="Export" />
+				<input type="button" id="importCode" value="Import" />
+			</div>
+			<table id="settings">
+				<tbody>
+					<tr class="">
+						<th><span class="description">Challenge Code</span></th>
+						<td><input type="text" title="Challenge Code" placeholder="Challenge Code" id="iChallengeCode" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Challenge ID</span></th>
+						<td><input type="text" title="Challenge ID" placeholder="Challenge ID" id="iChallengeID" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description dTitle">Title</span></th>
+						<td><input type="text" title="Title" placeholder="Title" id="iTitle" class="setting" value="WIN-CHALLENGE" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Start Date</span></th>
+						<td><input type="datetime-local" title="Start Date" id="iStartDate" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Scroll Speed</span></th>
+						<td><input type="range" title="Scroll Speed" min="0" max="5" step="1e-18" id="iScrollSpeed" class="setting" /></td>
+					</tr>
+					<tr class="">
+						<th><span class="description">Pause Duration</span></th>
+						<td><input type="range" title="Pause Duration" min="0" max="5000" step="1e-18" id="iPauseDuration" class="setting" /></td>
+					</tr>
+				</tbody>
+			</table>
+			<table id="challenges">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Current</th>
+						<th>Total</th>
+						<th>Finished</th>
+						<th></th>
+						<th></th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+		<script src="controls.js"></script>
+	</body>
+</html>

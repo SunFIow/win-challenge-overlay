@@ -2,7 +2,12 @@ const W = 500;
 const HT = 90;
 const HM = 400;
 const HL = 5;
-const HB = 105;
+const HB = 90;
+
+const backend =
+	location.hostname == '127.0.0.1' || location.hostname == 'localhost'
+		? 'http://127.0.0.1:3000'
+		: `https://win-challenge-backend${getURLPath()[0] == 'dev' ? '-dev' : ''}.up.railway.app`;
 
 let currentID = 0;
 
@@ -12,10 +17,13 @@ let offset = 0;
 let offsetDir = 1;
 let timeout = 0;
 
+let challengeID;
 let title;
 let startDate;
-let pauseDuration;
 let scrollSpeed;
+let pauseDuration;
+
+let showSendedSetting = false;
 
 function setup() {
 	const bAddChallenge = select('#addChallenge');
@@ -23,12 +31,25 @@ function setup() {
 	const bExport = select('#exportCode');
 	const bImport = select('#importCode');
 	const iChallengeCode = select('#iChallengeCode');
+	challengeID = select('#iChallengeID');
 	title = select('#iTitle');
 	startDate = select('#iStartDate');
 	scrollSpeed = select('#iScrollSpeed');
 	pauseDuration = select('#iPauseDuration');
 	const challengeTBody = select('#challenges>tBody').elt;
 
+	const bSend = select('#send').elt;
+	bSend.addEventListener('click', evt => {
+		fetch(backend + '/settings/' + challengeID.value(), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(jsonSettings()),
+		}).then(res => {
+			if (res.ok) showSendedSetting = true;
+		});
+	});
+
+	challengeID.input(settingsChanged);
 	title.input(settingsChanged);
 	startDate.input(settingsChanged);
 	scrollSpeed.input(settingsChanged);
@@ -61,18 +82,21 @@ function setup() {
 
 	bImport.mousePressed(() => loadChallengeSettingFromCode(challengeTBody, iChallengeCode.value()));
 
-	createCanvas(W, HT + HL + HM + HL + HB - 15);
+	createCanvas(W, HT + HL + HM + HL + HB);
 
-	info = createGraphics(W - 50, HM - 30);
+	textAlign(CENTER, CENTER);
+	textSize(HT * 0.5);
+	textStyle(BOLD);
+	info = createGraphics(W - 50, HM - 10);
+	info.stroke(0, 100);
 	info.textAlign(LEFT, TOP);
 	info.textSize(HT * 0.47);
-	info.textLeading(HT * 0.52);
 	info.textStyle(BOLD);
-	info.stroke(0, 100);
-	noStroke();
+	info.textLeading(HT * 0.52);
 }
 
 function draw() {
+	noStroke();
 	clear();
 
 	fill(163, 224, 201);
@@ -118,23 +142,27 @@ function draw() {
 		info.fill(70, 85, 80, 100);
 		info.rect(0, h - offset - HT * 0.19, W - 52, HL);
 	}
-	h -= HT * 0.28;
+	h -= HT * 0.13;
 	infoHeight = h;
-	image(info, 25, HT + 15);
+	image(info, 25, HT + HL + 10);
 
-	textAlign(CENTER, CENTER);
-	textSize(HT * 0.5);
 	if (startDate.value()) {
 		fill(235, 245, 255);
 		const millis = Date.now() - new Date(startDate.value());
 		const secs = Math.floor(millis / 1000);
 		const mins = Math.floor(secs / 60);
 		const hours = Math.floor(mins / 60);
-		text(`${nf(hours, 2, 0)}:${nf(mins % 60, 2, 0)}:${nf(secs % 60, 2, 0)}`, W / 2, HT + HM + HL + HB / 2);
+		text(`${nf(hours, 2, 0)}:${nf(mins % 60, 2, 0)}:${nf(secs % 60, 2, 0)}`, W / 2, HT + HM + HL + HB / 2 + 9);
 	} else {
 		fill(163, 224, 201);
-		text('00:00:00', W / 2, HT + HM + HL + HB / 2);
+		text('00:00:00', W / 2, HT + HM + HL + HB / 2 + 9);
 	}
+
+	stroke(25);
+	strokeWeight(3);
+	if (showSendedSetting) fill(0, 255, 0);
+	else fill(255, 0, 0);
+	ellipse(18, 18, 20, 20);
 
 	if (timeout > 0) {
 		timeout -= 1;
@@ -147,9 +175,9 @@ function draw() {
 		offset = 0;
 		offsetDir *= -1;
 	}
-	if (offset > infoHeight - (HM - 30)) {
+	if (offset > infoHeight - HM) {
 		timeout = pauseDuration.value();
-		offset = max(0, infoHeight - (HM - 30));
+		offset = max(0, infoHeight - HM);
 		offsetDir *= -1;
 	}
 }
@@ -172,6 +200,7 @@ function mousePressed(evt) {
 
 function loadChallengeSettingFromCode(tBody, code) {
 	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
+	challengeID.value(code?.challengeID ?? '');
 	title.value(code?.title ?? '');
 	startDate.value(code?.startDate ?? '');
 	scrollSpeed.value(code?.scrollSpeed ?? 0.25);
@@ -268,7 +297,14 @@ function jsonSettings() {
 		challenges.push(getChallenge(challengeID));
 	}
 
-	return { title: title.value(), startDate: startDate.value(), scrollSpeed: scrollSpeed.value(), pauseDuration: pauseDuration.value(), challenges };
+	return {
+		challengeID: challengeID.value(),
+		title: title.value(),
+		startDate: startDate.value(),
+		scrollSpeed: scrollSpeed.value(),
+		pauseDuration: pauseDuration.value(),
+		challenges,
+	};
 }
 
 function getChallenge(challengeID) {
@@ -288,4 +324,5 @@ function getChallenge(challengeID) {
 
 function settingsChanged() {
 	storeItem('challengeCode', jsonSettings());
+	showSendedSetting = false;
 }
