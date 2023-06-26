@@ -12,47 +12,32 @@ let offset = 0;
 let offsetDir = 1;
 let timeout = 0;
 
+let bUpdate;
+let bConnect;
 let challengeID;
 let title;
 let startDate;
 let scrollSpeed;
+let scrollSpeedValue;
 let pauseDuration;
-
-let showSendedSetting = false;
+let pauseDurationValue;
 
 function setup() {
-	const bAddChallenge = select('#addChallenge');
-	const bClear = select('#clearAll');
-	const bExport = select('#exportCode');
-	const bImport = select('#importCode');
+	bUpdate = select('#bUpdate').elt;
+	bConnect = select('#bConnect').elt;
+	const bAddChallenge = select('#bAddChallenge');
+	const bClear = select('#bClearAll');
+	const bExport = select('#bExportCode');
+	const bImport = select('#bImportCode');
 	const iChallengeCode = select('#iChallengeCode');
 	challengeID = select('#iChallengeID');
 	title = select('#iTitle');
 	startDate = select('#iStartDate');
 	scrollSpeed = select('#iScrollSpeed');
+	scrollSpeedValue = select('#iScrollSpeedValue').elt;
 	pauseDuration = select('#iPauseDuration');
+	pauseDurationValue = select('#iPauseDurationValue').elt;
 	const challengeTBody = select('#challenges>tBody').elt;
-
-	const bSend = select('#send').elt;
-	let host =
-		location.hostname == '127.0.0.1' || location.hostname == 'localhost'
-			? 'http://127.0.0.1:3000'
-			: `https://win-challenge-backend${getURLPath().includes('dev') ? '-dev' : ''}.up.railway.app`;
-	bSend.addEventListener('click', evt => {
-		fetch(host + '/settings/' + challengeID.value(), {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(jsonSettings()),
-		}).then(res => {
-			if (res.ok) showSendedSetting = true;
-		});
-	});
-
-	challengeID.input(settingsChanged);
-	title.input(settingsChanged);
-	startDate.input(settingsChanged);
-	scrollSpeed.input(settingsChanged);
-	pauseDuration.input(settingsChanged);
 
 	const params = getURLParams();
 	if (params.code) {
@@ -61,6 +46,52 @@ function setup() {
 	} else {
 		loadChallengeSettingFromCode(challengeTBody, getItem('challengeCode'));
 	}
+
+	const host =
+		location.hostname == '127.0.0.1' || location.hostname == 'localhost'
+			? 'http://127.0.0.1:3000'
+			: `https://win-challenge-backend${getURLPath().includes('dev') ? '-dev' : ''}.up.railway.app`;
+
+	bUpdate.addEventListener('click', event => {
+		fetch(host + '/settings/' + challengeID.value(), {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(jsonSettings()),
+		}).then(res => {
+			if (res.ok) updated(true);
+		});
+	});
+	updated(false);
+
+	let challengeUpdateSource;
+	bConnect.addEventListener('click', event => {
+		if (bConnect.hasAttribute('active')) {
+			challengeUpdateSource.close();
+			connected(false);
+		} else {
+			challengeUpdateSource = new EventSource(host + '/settings/' + challengeID.value());
+			challengeUpdateSource.onopen = event => connected(true);
+			challengeUpdateSource.addEventListener('connect', event => connected(true));
+			challengeUpdateSource.onmessage = event => {
+				loadChallengeSettingFromCode(challengeTBody, JSON.parse(event.data));
+				updated(true);
+			};
+			challengeUpdateSource.onerror = event => connected(false);
+		}
+	});
+	connected(false);
+
+	challengeID.input(settingsChanged);
+	title.input(settingsChanged);
+	startDate.input(settingsChanged);
+	scrollSpeed.input(event => {
+		settingsChanged();
+		scrollSpeedValue.textContent = nf(scrollSpeed.value(), 0, 2);
+	});
+	pauseDuration.input(event => {
+		settingsChanged();
+		pauseDurationValue.textContent = int(pauseDuration.value());
+	});
 
 	bAddChallenge.mousePressed(() => {
 		let challengeID;
@@ -71,11 +102,7 @@ function setup() {
 		addChallengeSetting(challengeTBody, challengeID);
 	});
 
-	bClear.mousePressed(() => {
-		title.value('');
-		startDate.value('');
-		while (challengeTBody.firstChild) challengeTBody.removeChild(challengeTBody.lastChild);
-	});
+	bClear.mousePressed(() => loadChallengeSettingFromCode(challengeTBody, null));
 
 	bExport.mousePressed(() => iChallengeCode.value(JSON.stringify(jsonSettings())));
 
@@ -83,6 +110,7 @@ function setup() {
 
 	createCanvas(W, HT + HL + HM + HL + HB);
 
+	noStroke();
 	textAlign(CENTER, CENTER);
 	textSize(HT * 0.5);
 	textStyle(BOLD);
@@ -95,7 +123,6 @@ function setup() {
 }
 
 function draw() {
-	noStroke();
 	clear();
 
 	fill(163, 224, 201);
@@ -157,12 +184,6 @@ function draw() {
 		text('00:00:00', W / 2, HT + HM + HL + HB / 2 + 9);
 	}
 
-	stroke(25);
-	strokeWeight(3);
-	if (showSendedSetting) fill(0, 255, 0);
-	else fill(255, 0, 0);
-	ellipse(18, 18, 20, 20);
-
 	if (timeout > 0) {
 		timeout -= 1;
 		return;
@@ -181,8 +202,8 @@ function draw() {
 	}
 }
 
-function mousePressed(evt) {
-	const classList = evt.target.classList;
+function mousePressed(event) {
+	const classList = event.target.classList;
 	if (classList.contains('cRemoveChallenge')) {
 		const challenge = select('.challenge.' + classList[1]);
 		challenge.remove();
@@ -203,7 +224,9 @@ function loadChallengeSettingFromCode(tBody, code) {
 	title.value(code?.title ?? '');
 	startDate.value(code?.startDate ?? '');
 	scrollSpeed.value(code?.scrollSpeed ?? 0.25);
+	scrollSpeedValue.textContent = nf(scrollSpeed.value(), 0, 2);
 	pauseDuration.value(code?.pauseDuration ?? 300);
+	pauseDurationValue.textContent = int(pauseDuration.value());
 	while (tBody.firstChild) tBody.removeChild(tBody.lastChild);
 	if (code?.challenges)
 		for (const challenge of code.challenges) addChallengeSetting(tBody, challenge.id, challenge.name, challenge.current, challenge.total, challenge.finished);
@@ -323,5 +346,29 @@ function getChallenge(challengeID) {
 
 function settingsChanged() {
 	storeItem('challengeCode', jsonSettings());
-	showSendedSetting = false;
+	updated(false);
+}
+
+function updated(bool) {
+	if (bool) {
+		bUpdate.setAttribute('active', '');
+		bUpdate.setAttribute('value', 'Updated');
+		bUpdate.setAttribute('title', 'Overlays are up to date');
+	} else {
+		bUpdate.removeAttribute('active');
+		bUpdate.setAttribute('value', 'Update');
+		bUpdate.setAttribute('title', 'Update Overlays with current Settings');
+	}
+}
+
+function connected(bool) {
+	if (bool) {
+		bConnect.setAttribute('active', '');
+		bConnect.setAttribute('value', 'Connected');
+		bConnect.setAttribute('title', 'Receiving Overlay Updates');
+	} else {
+		bConnect.removeAttribute('active');
+		bConnect.setAttribute('value', 'Connect');
+		bConnect.setAttribute('title', 'Connect to receive Overlay Updates');
+	}
 }

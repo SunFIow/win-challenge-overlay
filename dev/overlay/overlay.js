@@ -18,21 +18,15 @@ let scrollSpeed;
 let pauseDuration;
 let challenges;
 
-let challengeUpdateSource;
-
 function setup() {
 	const params = getURLParams();
-	if (params.id) {
-		let host =
+	if (params.challengeID) {
+		const host =
 			location.hostname == '127.0.0.1' || location.hostname == 'localhost'
 				? 'http://127.0.0.1:3000'
 				: `https://win-challenge-backend${getURLPath().includes('dev') ? '-dev' : ''}.up.railway.app`;
-		challengeUpdateSource = new EventSource(host + '/settings/' + params.id);
-		challengeUpdateSource.onmessage = event => {
-			console.log(event, event.data);
-			loadChallengeSettingFromCode(JSON.parse(event.data));
-		};
-		// challengeUpdateSource.close();
+		const challengeUpdateSource = new EventSource(host + '/settings/' + params.challengeID);
+		challengeUpdateSource.onmessage = event => loadChallengeSettingFromCode(JSON.parse(event.data));
 	} else if (params.code) {
 		params.code = decodeURI(params.code);
 		loadChallengeSettingFromCode(params.code);
@@ -132,10 +126,7 @@ function draw() {
 }
 
 function loadChallengeSettingFromCode(code) {
-	console.log('1', code);
 	if (typeof code === 'string' || code instanceof String) code = JSON.parse(code);
-	console.log('2', code);
-
 	title = code?.title ?? '';
 	startDate = code?.startDate ?? '';
 	scrollSpeed = code?.scrollSpeed ?? 0.25;

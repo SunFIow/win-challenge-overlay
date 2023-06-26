@@ -18,7 +18,7 @@
 				oninput="
 					this.style.width = Math.max(this.value.length, 11) + 'ch';
 					let linkOverlay = document.querySelector('.link a');
-					linkOverlay.setAttribute('href', linkOverlay.getAttribute('base') + (this.value ? '?id=' + this.value : ''));
+					linkOverlay.setAttribute('href', linkOverlay.getAttribute('base') + (this.value ? '?challengeID=' + this.value : ''));
 					"
 			/>
 		</div>
